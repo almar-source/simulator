@@ -5,7 +5,7 @@ import plotly.express as px
 import json
 
 st.set_page_config(
-    page_title="Quartus Intelligence App",
+    page_title="Brand Intelligence Simulator",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -37,67 +37,114 @@ with st.sidebar:
     )
 
     st.markdown("---")
-    st.markdown("**Quartus Capital Partners**")
-    st.markdown("*Brand Equity Intelligence v3.0*")
+    st.markdown("**Brand Intelligence Simulator**")
+    st.markdown("*Multi-brand sentiment and reputation analysis*")
 
 if api_key:
     genai.configure(api_key=api_key)
 
 tab1, tab2 = st.tabs([
-    "🧠 Sentiment Impact Simulator",
-    "📊 Live Dashboard (April 2026)"
+    "🧠 Brand Impact Simulator",
+    "📊 Demo Dashboard"
 ])
 
 with tab1:
-    st.markdown("## SENTIMENT **IMPACT** SIMULATOR")
+    st.markdown("## BRAND **IMPACT** SIMULATOR")
     st.markdown(
-        "Enter a hypothetical news headline, press release, or market rumor below. "
-        "The simulator uses advanced LLM reasoning to quantify how this event would "
-        "influence the Digital Share of Voice and LP Trust Index."
+        "Enter any brand, industry, audience, and hypothetical news event. "
+        "The simulator estimates how the event could affect perception, trust, visibility, and reputation."
     )
+
+    st.markdown("### Brand Setup")
+
+    brand_col1, brand_col2 = st.columns(2)
+
+    with brand_col1:
+        brand_name = st.text_input(
+            "Brand / Company Name",
+            value="Quartus Capital Partners",
+            placeholder="e.g., Nike, OpenAI, Scalto, Apple..."
+        )
+
+        industry = st.text_input(
+            "Industry / Category",
+            value="Venture Capital / B2B AI Growth",
+            placeholder="e.g., SaaS, luxury fashion, healthcare, fintech..."
+        )
+
+    with brand_col2:
+        audience = st.text_input(
+            "Primary Audience",
+            value="LPs, founders, investors, and market analysts",
+            placeholder="e.g., customers, investors, users, patients, donors..."
+        )
+
+        measurement_goal = st.selectbox(
+            "What do you want to measure?",
+            [
+                "Brand Sentiment",
+                "Trust & Credibility",
+                "Market Reputation",
+                "Purchase Intent",
+                "Investor Confidence",
+                "Customer Loyalty",
+                "Public Perception",
+                "Employer Brand"
+            ]
+        )
+
+    st.markdown("---")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("Load Scenario: Major Exit"):
+        if st.button("Load Scenario: Positive Announcement"):
             st.session_state["sim_input"] = (
-                "Quartus Capital Partners announces the successful acquisition of its "
-                "healthcare AI portfolio company 'MedFlow' by a global pharma giant "
-                "for $1.2B, yielding a top-tier return for LPs."
+                f"{brand_name} announces a major strategic partnership that strengthens its market position, "
+                "increases credibility with its core audience, and generates strong positive media coverage."
             )
 
     with col2:
-        if st.button("Load Scenario: New Fund"):
+        if st.button("Load Scenario: Reputation Risk"):
             st.session_state["sim_input"] = (
-                "Quartus Capital Partners initiates fundraising for 'AI Fund III' "
-                "with a target of $250M, specifically focusing on sovereign AI "
-                "and edge computing infrastructure."
+                f"{brand_name} faces public criticism after reports emerge questioning its operational transparency, "
+                "customer experience, and long-term commitment to its stated values."
             )
 
     user_input = st.text_area(
         "Simulate News Event",
         value=st.session_state.get("sim_input", ""),
-        height=100,
-        placeholder="e.g., Quartus Capital Partners announces..."
+        height=120,
+        placeholder="e.g., The company announces a product launch, scandal, acquisition, campaign, funding round..."
     )
 
     if st.button("RUN SIMULATION", type="primary"):
         if not api_key:
             st.error("Please enter a Gemini API Key in the sidebar.")
+        elif not brand_name.strip():
+            st.warning("Please enter a brand name.")
         elif not user_input.strip():
             st.warning("Please enter a scenario to simulate.")
         else:
             with st.spinner("Processing AI Inference..."):
                 try:
-                    system_prompt = """
-You are a senior Financial Brand Analyst specializing in venture capital sentiment.
-Evaluate news about Quartus Capital Partners, a B2B AI Growth firm.
+                    system_prompt = f"""
+You are a senior Brand Intelligence Analyst.
+
+Analyze the potential impact of a hypothetical news event on the following brand:
+
+Brand: {brand_name}
+Industry: {industry}
+Primary audience: {audience}
+Measurement goal: {measurement_goal}
+
+Evaluate how the event could affect brand perception, trust, visibility, and market positioning.
 
 Return ONLY valid JSON. Do not include markdown. Do not include explanations outside JSON.
 
 The JSON must have exactly this structure:
 
-{
+{{
   "predictedScore": 0,
   "shiftPercentage": "+0.0%",
   "confidence": 0,
@@ -108,16 +155,24 @@ The JSON must have exactly this structure:
   "risks": ["string", "string"],
   "inference1": "string",
   "inference2": "string"
-}
+}}
 
 Rules:
 - predictedScore must be a number from 0 to 100.
 - confidence must be a number from 0 to 100.
 - primaryDriver must be 15 characters or fewer.
 - radarData must contain exactly 5 numbers from 0 to 100.
+- radarData represents:
+  1. Trust
+  2. Visibility
+  3. Reputation
+  4. Differentiation
+  5. Audience Confidence
 - marketAnalysis must be 2 to 3 sentences.
 - positives must contain exactly 2 items.
 - risks must contain exactly 2 items.
+- inference1 must explain the score.
+- inference2 must explain the radar distribution.
 """
 
                     model = genai.GenerativeModel(
@@ -134,9 +189,9 @@ Rules:
                     st.success("Simulation Complete")
 
                     m1, m2, m3 = st.columns(3)
-                    m1.metric("Predicted Shift", data["shiftPercentage"])
-                    m2.metric("Confidence Level", f"{data['confidence']}%")
-                    m3.metric("Primary Driver", data["primaryDriver"])
+                    m1.metric("Predicted Impact Score", data["predictedScore"])
+                    m2.metric("Estimated Shift", data["shiftPercentage"])
+                    m3.metric("Confidence Level", f"{data['confidence']}%")
 
                     st.markdown("---")
 
@@ -144,7 +199,7 @@ Rules:
 
                     with c1:
                         st.subheader("Impact Intensity")
-                        st.caption("Shift in the baseline Sentiment Score.")
+                        st.caption("Estimated impact score on a 0 to 100 scale.")
 
                         fig_gauge = go.Figure(go.Indicator(
                             mode="gauge+number",
@@ -172,14 +227,14 @@ Rules:
 
                     with c2:
                         st.subheader("Brand Pillar Resonance")
-                        st.caption("Values shifted across 5 distinct dimensions.")
+                        st.caption("Estimated impact across five brand dimensions.")
 
                         categories = [
-                            "LP Trust",
-                            "Tech Innovation",
-                            "Stability",
+                            "Trust",
                             "Visibility",
-                            "Deal Flow Velocity"
+                            "Reputation",
+                            "Differentiation",
+                            "Audience Confidence"
                         ]
 
                         fig_radar = go.Figure(data=go.Scatterpolar(
@@ -209,6 +264,7 @@ Rules:
                         st.info(data["inference2"])
 
                     st.markdown("---")
+
                     st.markdown("### 🧠 AI Qualitative Synthesis")
                     st.markdown(f"> *{data['marketAnalysis']}*")
 
@@ -216,7 +272,7 @@ Rules:
 
                     with qual1:
                         st.markdown(
-                            "<h4 style='color: #38bdf8;'>Immediate Market Response</h4>",
+                            "<h4 style='color: #38bdf8;'>Positive Signals</h4>",
                             unsafe_allow_html=True
                         )
                         for pos in data["positives"]:
@@ -224,46 +280,51 @@ Rules:
 
                     with qual2:
                         st.markdown(
-                            "<h4 style='color: #fb923c;'>Strategic Risks & Considerations</h4>",
+                            "<h4 style='color: #fb923c;'>Risks & Considerations</h4>",
                             unsafe_allow_html=True
                         )
                         for risk in data["risks"]:
                             st.markdown(f"- {risk}")
 
+                    st.markdown("---")
+                    st.markdown("### Simulation Context")
+                    st.write(f"**Brand:** {brand_name}")
+                    st.write(f"**Industry:** {industry}")
+                    st.write(f"**Primary Audience:** {audience}")
+                    st.write(f"**Measurement Goal:** {measurement_goal}")
+
                 except Exception as e:
                     st.error(f"Failed to generate simulation: {e}")
 
 with tab2:
+    st.markdown("## Demo Brand Intelligence Dashboard")
+
     st.markdown(
-        "<div style='color: #22c55e; font-weight: bold; margin-bottom: 10px;'>"
-        "🟢 LIVE UPDATE: APRIL 13, 2026"
-        "</div>",
-        unsafe_allow_html=True
+        "This is a static demo dashboard. You can later connect it to real data from "
+        "Google Analytics, social listening, CRM, SEO tools, or survey data."
     )
 
-    st.markdown("## Quartus Evolution: Sentiment & SEO Pulse")
-    st.markdown("**Current Q2 2026 Momentum: 11 Active Ventures**")
-
     s1, s2, s3 = st.columns(3)
-    s1.metric("Net Brand Sentiment", "84.1%", "ATH: All-Time High")
-    s2.metric("SEO Authority Score", "76.5", "+2.3pts since Q1")
-    s3.metric("Share of Voice", "19.4%", "Targeting 20% by Q3")
+
+    s1.metric("Average Sentiment", "78.4%", "+4.2 pts")
+    s2.metric("Trust Index", "81.2", "+2.1 pts")
+    s3.metric("Share of Voice", "22.7%", "+3.5%")
 
     st.markdown("---")
 
     c3, c4 = st.columns(2)
 
     with c3:
-        st.subheader("Sentiment Trajectory Analysis")
+        st.subheader("Sentiment Trajectory")
 
         line_data = {
-            "Quarter": ["Q2 2024", "Q4 2024", "Q2 2025", "Q4 2025", "APR 2026"],
-            "Score": [48, 55, 76, 82, 84.1]
+            "Period": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+            "Score": [62, 67, 71, 74, 76, 78.4]
         }
 
         fig_line = px.line(
             line_data,
-            x="Quarter",
+            x="Period",
             y="Score",
             markers=True
         )
@@ -284,17 +345,17 @@ with tab2:
         st.plotly_chart(fig_line, use_container_width=True)
 
     with c4:
-        st.subheader("Share of Voice Breakdown")
+        st.subheader("Channel Impact Breakdown")
 
-        sov_data = {
-            "Firm": ["Quartus", "Competitor A", "Competitor B", "Competitor C"],
-            "Share": [19.4, 28.1, 24.7, 27.8]
+        channel_data = {
+            "Channel": ["Search", "Social", "PR", "Community", "Direct"],
+            "Impact": [26, 22, 19, 18, 15]
         }
 
         fig_bar = px.bar(
-            sov_data,
-            x="Firm",
-            y="Share"
+            channel_data,
+            x="Channel",
+            y="Impact"
         )
 
         fig_bar.update_layout(
@@ -302,7 +363,7 @@ with tab2:
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             font={"color": "#f1f5f9"},
-            yaxis=dict(range=[0, 35])
+            yaxis=dict(range=[0, 30])
         )
 
         st.plotly_chart(fig_bar, use_container_width=True)
@@ -311,7 +372,6 @@ with tab2:
 
     st.markdown("### Strategic Intelligence Summary")
     st.write(
-        "Quartus continues to show strong digital momentum across sentiment, "
-        "visibility, and LP trust indicators. Current positioning suggests "
-        "continued growth potential heading into Q3."
+        "The demo dashboard suggests a positive trend across sentiment, trust, and visibility. "
+        "For production use, replace these static values with live data from your preferred data sources."
     )
