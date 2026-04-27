@@ -1,5 +1,5 @@
 import streamlit as st
-from google import genai
+import google.generativeai as genai
 import plotly.graph_objects as go
 import plotly.express as px
 import json
@@ -39,6 +39,9 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("**Quartus Capital Partners**")
     st.markdown("*Brand Equity Intelligence v3.0*")
+
+if api_key:
+    genai.configure(api_key=api_key)
 
 tab1, tab2 = st.tabs([
     "🧠 Sentiment Impact Simulator",
@@ -86,8 +89,6 @@ with tab1:
         else:
             with st.spinner("Processing AI Inference..."):
                 try:
-                    client = genai.Client(api_key=api_key)
-
                     system_prompt = """
 You are a senior Financial Brand Analyst specializing in venture capital sentiment.
 Evaluate news about Quartus Capital Partners, a B2B AI Growth firm.
@@ -119,15 +120,15 @@ Rules:
 - risks must contain exactly 2 items.
 """
 
-                    response = client.models.generate_content(
-                        model="gemini-2.5-flash",
-                        contents=user_input,
-                        config={
-                            "system_instruction": system_prompt,
+                    model = genai.GenerativeModel(
+                        model_name="gemini-2.0-flash",
+                        system_instruction=system_prompt,
+                        generation_config={
                             "response_mime_type": "application/json"
                         }
                     )
 
+                    response = model.generate_content(user_input)
                     data = json.loads(response.text)
 
                     st.success("Simulation Complete")
